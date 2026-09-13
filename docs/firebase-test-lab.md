@@ -27,7 +27,7 @@ gcloud config set project YOUR_FIREBASE_PROJECT_ID
 ### 3. EAS Android APK (testlab profile)
 
 ```bash
-pnpm dlx eas-cli build --platform android --profile testlab --wait
+pnpm exec eas build --platform android --profile testlab --wait
 ```
 
 `eas.json` → `testlab` builds an unsigned APK with mock auth enabled (good for Robo).

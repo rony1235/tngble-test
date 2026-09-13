@@ -7,6 +7,7 @@
     "icon": "./assets/icon.png",
     "scheme": "tngble",
     "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "platforms": [
       "android",
       "ios",
@@ -54,8 +55,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "2ff09bdf-727e-4355-b185-4359bb9795c9"
+        "projectId": "3eda66cd-ae06-460a-a54d-af0c35ff48ba"
       }
-    }
+    },
+    "owner": "rony007073"
   }
 }

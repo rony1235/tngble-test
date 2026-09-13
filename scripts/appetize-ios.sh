@@ -47,8 +47,9 @@ LOCAL_ARTIFACT="${ARTIFACTS_DIR}/app.tar.gz"
 eas_cmd() {
   if command -v eas >/dev/null 2>&1; then
     eas "$@"
+  elif [[ -x "$ROOT/node_modules/.bin/eas" ]]; then
+    pnpm exec eas "$@"
   else
-    # Prefer dlx over a project eas-cli dep (expo-doctor flags local eas-cli).
     pnpm dlx eas-cli "$@"
   fi
 }

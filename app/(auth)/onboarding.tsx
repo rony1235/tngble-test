@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 
+import { BrandBackground } from '@/components/BrandBackground';
 import { OnboardingCarousel } from '@/onboarding/OnboardingCarousel';
 import { colors } from '@/theme/tokens';
 
@@ -27,11 +28,14 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.root} testID="onboarding-screen">
+      <BrandBackground />
       <StatusBar style="light" />
-      <OnboardingCarousel
-        onCreateAccount={() => go('/(auth)/register')}
-        onLogin={() => go('/(auth)/login')}
-      />
+      <View style={styles.content}>
+        <OnboardingCarousel
+          onCreateAccount={() => go('/(auth)/register')}
+          onLogin={() => go('/(auth)/login')}
+        />
+      </View>
     </View>
   );
 }
@@ -39,6 +43,10 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.splashBackground,
+  },
+  content: {
+    flex: 1,
+    zIndex: 1,
   },
 });

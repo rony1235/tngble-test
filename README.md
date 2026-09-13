@@ -52,7 +52,6 @@ Import with the `@/` alias (`@/components/Button`).
 Android cloud smoke (Firebase Test Lab): see [`docs/firebase-test-lab.md`](docs/firebase-test-lab.md).
 
 iOS Appetize (local Mac preferred): see [`docs/appetize-ios.md`](docs/appetize-ios.md).
-
 ## First contribution
 
 Implement the login screen UI in `app/(auth)/login.tsx` from the design file you were given.

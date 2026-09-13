@@ -134,6 +134,7 @@ export function OnboardingCarousel({ onLogin, onCreateAccount }: OnboardingCarou
         style={[styles.carouselRegion, { top: heroRegionTop, height: heroListHeight }]}
       >
         <FlatList
+          contentContainerStyle={styles.listContent}
           data={ONBOARDING_SLIDES}
           decelerationRate="fast"
           disableIntervalMomentum
@@ -197,9 +198,14 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 1,
     overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
   list: {
     flex: 1,
+    backgroundColor: 'transparent',
+  },
+  listContent: {
+    backgroundColor: 'transparent',
   },
   panelAnchor: {
     position: 'absolute',

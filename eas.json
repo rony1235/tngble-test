@@ -14,22 +14,21 @@
     "preview": {
       "distribution": "internal"
     },
+    "appetize": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_USE_MOCK_AUTH": "true"
+      }
+    },
     "testlab": {
       "extends": "preview",
       "distribution": "internal",
       "withoutCredentials": true,
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_USE_MOCK_AUTH": "true"
-      }
-    },
-    "appetize": {
-      "distribution": "internal",
-      "withoutCredentials": true,
-      "ios": {
-        "simulator": true
       },
       "env": {
         "EXPO_PUBLIC_USE_MOCK_AUTH": "true"

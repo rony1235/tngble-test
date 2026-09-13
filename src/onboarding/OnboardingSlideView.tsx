@@ -65,14 +65,17 @@ export function OnboardingSlideView({
 const styles = StyleSheet.create({
   slide: {
     overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
   sharpBand: {
     width: '100%',
     overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
   blurBand: {
     flex: 1,
     width: '100%',
     overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
 });
