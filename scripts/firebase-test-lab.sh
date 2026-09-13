@@ -57,7 +57,7 @@ eas_cmd() {
   if command -v eas >/dev/null 2>&1; then
     eas "$@"
   else
-    pnpm exec eas "$@"
+    pnpm dlx eas-cli "$@"
   fi
 }
 
@@ -98,7 +98,7 @@ download_latest_eas_apk() {
   if ! meta="$(latest_finished_build_meta)"; then
     if [[ "$BUILD_IF_MISSING" != "1" ]]; then
       echo "error: no finished Android build found for profile '$EAS_PROFILE'." >&2
-      echo "Run: pnpm exec eas build --platform android --profile $EAS_PROFILE --wait" >&2
+      echo "Run: pnpm dlx eas-cli build --platform android --profile $EAS_PROFILE --wait" >&2
       exit 1
     fi
     ensure_eas_apk_build

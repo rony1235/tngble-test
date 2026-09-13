@@ -60,7 +60,7 @@ jobs:
         if: ${{ inputs.build_first }}
         env:
           EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}
-        run: pnpm exec eas build --platform android --profile testlab --non-interactive --wait
+        run: pnpm dlx eas-cli build --platform android --profile testlab --non-interactive --wait
 
       - name: Run Robo on Firebase Test Lab
         env:
