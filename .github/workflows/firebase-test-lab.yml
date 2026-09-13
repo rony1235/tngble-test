@@ -1,0 +1,77 @@
+# Manual Firebase Test Lab Robo smoke against an EAS Android APK.
+# Costs GCP Test Lab quota — run on demand, not on every PR.
+#
+# Secrets:
+#   EAS_TOKEN              Expo access token (eas build / list / download)
+#   GCP_SA_KEY             JSON key for a service account with Firebase Test Lab Admin
+#   FIREBASE_PROJECT_ID    GCP / Firebase project id
+#
+# Optional repository variable:
+#   TESTLAB_DEVICES        e.g. model=MediumPhone.arm,version=34,locale=en,orientation=portrait
+
+name: Firebase Test Lab
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_first:
+        description: "Build a fresh EAS Android APK (testlab profile) before testing"
+        type: boolean
+        default: true
+      timeout:
+        description: "Test Lab timeout (e.g. 5m)"
+        type: string
+        default: "5m"
+
+concurrency:
+  group: firebase-test-lab
+  cancel-in-progress: false
+
+jobs:
+  testlab:
+    name: Android Robo (Test Lab)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: EAS Android build (testlab)
+        if: ${{ inputs.build_first }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}
+        run: pnpm dlx eas-cli build --platform android --profile testlab --non-interactive --wait
+
+      - name: Run Robo on Firebase Test Lab
+        env:
+          EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          TESTLAB_TIMEOUT: ${{ inputs.timeout }}
+          TESTLAB_DEVICES: ${{ vars.TESTLAB_DEVICES }}
+          DOWNLOAD_LATEST: "1"
+          EAS_PROFILE: testlab
+        run: |
+          if [[ -z "${TESTLAB_DEVICES:-}" ]]; then
+            unset TESTLAB_DEVICES
+          fi
+          bash ./scripts/firebase-test-lab.sh

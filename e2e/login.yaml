@@ -1,0 +1,28 @@
+# Maestro E2E — install CLI: https://maestro.mobile.dev
+# Run against a simulator/emulator with the app installed:
+#   maestro test e2e/login.yaml
+appId: com.tngble.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: onboarding-screen
+    timeout: 10000
+- tapOn:
+    id: onboarding-login
+- extendedWaitUntil:
+    visible:
+      id: login-screen
+    timeout: 5000
+- assertVisible:
+    id: login-screen
+- tapOn:
+    id: login-email
+- inputText: "dev@tngble.app"
+- tapOn:
+    id: login-password
+- inputText: "secret1"
+- tapOn:
+    id: login-submit
+- assertVisible:
+    id: home-screen
