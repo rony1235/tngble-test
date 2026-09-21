@@ -1,5 +1,6 @@
 import { forwardRef, type ReactNode, useState } from 'react';
 import {
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -101,42 +102,65 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
-    minHeight: 52,
+    height: 52,
     justifyContent: 'center',
   },
   loginField: {
     backgroundColor: colors.inputFill,
     borderRadius: 8,
-    minHeight: 48,
+    height: 48,
     paddingHorizontal: 12,
-    paddingVertical: 12,
     paddingRight: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    borderWidth: 0,
+    // Always reserve 1px so focus/error borders don't shrink the text box
+    borderWidth: 1,
+    borderColor: 'transparent',
     width: '100%',
   },
   loginFocused: {
-    borderWidth: 1,
     borderColor: colors.brandCTA,
   },
   loginError: {
-    borderWidth: 1,
     borderColor: colors.danger,
   },
   input: {
-    ...typography.body,
+    fontSize: typography.body.fontSize,
+    fontWeight: typography.body.fontWeight,
     color: colors.text,
-    paddingVertical: spacing.md,
+    flex: 1,
+    padding: 0,
+    margin: 0,
+    ...Platform.select({
+      ios: {
+        // lineHeight on iOS TextInput pins glyphs toward the bottom of the field
+      },
+      android: {
+        textAlignVertical: 'center' as const,
+        includeFontPadding: false,
+      },
+      default: {},
+    }),
   },
   loginInput: {
-    ...typography.input,
+    fontSize: typography.input.fontSize,
+    fontWeight: typography.input.fontWeight,
     color: colors.white,
     flex: 1,
     padding: 0,
     margin: 0,
     backgroundColor: 'transparent',
+    ...Platform.select({
+      ios: {
+        // Keep font metrics only — lineHeight + vertical padding mis-align on iOS
+      },
+      android: {
+        textAlignVertical: 'center' as const,
+        includeFontPadding: false,
+      },
+      default: {},
+    }),
   },
   trailing: {
     justifyContent: 'center',
