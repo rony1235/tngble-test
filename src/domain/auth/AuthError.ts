@@ -11,7 +11,7 @@ export type AuthError = {
   code: AuthErrorCode;
   /** Safe for UI — never reveals account existence, password proximity, or attempt counts. */
   message: string;
-  /** Raw provider/Auth0 signal (shown under the safe message while debugging). */
+  /** Raw provider signal for logs only — never render in UI. */
   detail?: string;
 };
 

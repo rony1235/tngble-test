@@ -25,6 +25,10 @@ type Rule = {
 const SENSITIVE_COLLAPSE =
   /wrong.?email.?or.?password|wrong.?password|invalid.?password|invalid_user_password|invalid.?user|user.?does.?not.?exist|no.?account|unknown.?user|email.?not.?found|user.?not.?found|incorrect.?credentials|invalid.?credentials|password.?is.?incorrect|too.?many.?login|attempt(s)?.?remain|almost.?correct|account.?not.?found/i;
 
+/** Copy that must never appear in UI messages (Auth0 dashboard / eng jargon). */
+const UNSAFE_UI_JARGON =
+  /Auth0|Username-Password|Passwordless|Grant Types|EXPO_PUBLIC|Post-Login|My Account API|invalid_signup|unauthorized_client|dashboard/i;
+
 const RULES: Rule[] = [
   {
     code: 'cancelled',
@@ -136,8 +140,8 @@ function withProviderDetail(
 
 /**
  * Maps provider/SDK failures to a small safe taxonomy.
- * Safe copy lives in `message`; raw Auth0/provider text is attached as `detail`
- * (except credential-enumeration cases).
+ * Safe copy lives in `message` (user-facing only); raw provider text is `detail`
+ * for logs/debug — never show `detail` in UI.
  */
 export function mapProviderError(error: unknown): AuthError {
   if (error == null) {
@@ -153,6 +157,10 @@ export function mapProviderError(error: unknown): AuthError {
       typeof maybe.message === 'string' &&
       Object.prototype.hasOwnProperty.call(AUTH_ERROR_MESSAGES, maybe.code)
     ) {
+      // Guard against older builds / callers that still pass eng jargon as message.
+      if (UNSAFE_UI_JARGON.test(maybe.message)) {
+        return createAuthError(maybe.code as AuthErrorCode);
+      }
       return maybe;
     }
   }
@@ -190,7 +198,7 @@ export function mapProviderError(error: unknown): AuthError {
     return withProviderDetail(
       createAuthError(
         'generic',
-        'Your code was accepted, but Auth0 could not finish account setup. Fix the Post-Login linking Action, then request a new code.',
+        'Your code was accepted, but we could not finish setup. Request a new code and try again.',
       ),
       like,
       text,
@@ -201,7 +209,7 @@ export function mapProviderError(error: unknown): AuthError {
     return withProviderDetail(
       createAuthError(
         'generic',
-        'Auth0 blocks signup until email is verified. Turn OFF “Verify email on sign up” on Username-Password-Authentication, then try again.',
+        'We could not create your account right now. Please try again later.',
       ),
       like,
       text,
@@ -217,7 +225,7 @@ export function mapProviderError(error: unknown): AuthError {
     return withProviderDetail(
       createAuthError(
         'generic',
-        'Auth0 grant missing. Native app → Settings → Advanced → Grant Types → enable Password and Passwordless OTP, then Save.',
+        'Sign-in is temporarily unavailable. Please try again later.',
       ),
       like,
       text,
@@ -232,7 +240,7 @@ export function mapProviderError(error: unknown): AuthError {
     return withProviderDetail(
       createAuthError(
         'generic',
-        'Auth0 rejected password login. Enable the Password grant on the Native app, and ensure Username-Password-Authentication is enabled for this application.',
+        'Sign-in is temporarily unavailable. Please try again later.',
       ),
       like,
       text,
@@ -243,7 +251,7 @@ export function mapProviderError(error: unknown): AuthError {
     return withProviderDetail(
       createAuthError(
         'generic',
-        'The Auth0 database connection is disabled. Enable Username-Password-Authentication for this Native application, then try again.',
+        'Sign-in is temporarily unavailable. Please try again later.',
       ),
       like,
       text,
@@ -258,7 +266,7 @@ export function mapProviderError(error: unknown): AuthError {
     return withProviderDetail(
       createAuthError(
         'generic',
-        'Auth0 Passwordless Email is not enabled. Enable Authentication → Passwordless → Email for this Native application and enable its Passwordless OTP grant.',
+        'We could not send a verification code right now. Please try again later.',
       ),
       like,
       text,
@@ -276,15 +284,13 @@ export function mapProviderError(error: unknown): AuthError {
     );
   }
 
-  // Auth0 often returns this for: (1) Requires Username / Flexible Identifier
-  // mismatch, (2) duplicate email when “generic signup API error” is ON, or
-  // (3) password/signup policy. Prefer the identifier checklist — most common
-  // for this app’s email-only Create Account.
+  // Auth0 invalid_signup: duplicate email (when generic errors are ON), identifier
+  // policy, or signup policy — never expose dashboard instructions to users.
   if (/invalid_signup|invalid.?sign.?up/i.test(text)) {
     return withProviderDetail(
       createAuthError(
         'generic',
-        'Auth0 rejected signup (invalid_signup). On Username-Password-Authentication → Attributes: enable Email as identifier with signup Required; turn Username identifier OFF (or signup Off). Then try a new email, or Sign in if this address already exists.',
+        'We could not create your account. Try a different email, or sign in if you already have one.',
       ),
       like,
       text,
@@ -310,7 +316,7 @@ export function mapProviderError(error: unknown): AuthError {
     return withProviderDetail(
       createAuthError(
         'generic',
-        'Auth0 rejected the API audience. Clear EXPO_PUBLIC_AUTH0_AUDIENCE if you do not have an Auth0 API, then rebuild.',
+        'Sign-in is temporarily unavailable. Please try again later.',
       ),
       like,
       text,
@@ -337,7 +343,7 @@ export function mapProviderError(error: unknown): AuthError {
   return withProviderDetail(createAuthError('generic'), like, text);
 }
 
-/** Assert helper for tests: messages must not leak enumeration. */
+/** Assert helper for tests: messages must not leak enumeration or eng jargon. */
 export function isSafeAuthErrorMessage(message: string): boolean {
-  return !SENSITIVE_COLLAPSE.test(message);
+  return !SENSITIVE_COLLAPSE.test(message) && !UNSAFE_UI_JARGON.test(message);
 }

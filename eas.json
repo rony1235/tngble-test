@@ -28,22 +28,28 @@
     "standalone": {
       "distribution": "internal",
       "node": "22.13.0",
+      "environment": "production",
       "android": {
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_USE_MOCK_AUTH": "false"
+        "EXPO_PUBLIC_USE_MOCK_AUTH": "false",
+        "EXPO_PUBLIC_AUTH0_DOMAIN": "dev-bf5q33ub1oab51bp.us.auth0.com",
+        "EXPO_PUBLIC_AUTH0_CLIENT_ID": "uPy8DhDTmpWsT8xI8kPq83Wg0HSP2Els"
       }
     },
     "appetize": {
       "distribution": "internal",
       "withoutCredentials": true,
       "node": "22.13.0",
+      "environment": "production",
       "ios": {
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_USE_MOCK_AUTH": "true"
+        "EXPO_PUBLIC_USE_MOCK_AUTH": "false",
+        "EXPO_PUBLIC_AUTH0_DOMAIN": "dev-bf5q33ub1oab51bp.us.auth0.com",
+        "EXPO_PUBLIC_AUTH0_CLIENT_ID": "uPy8DhDTmpWsT8xI8kPq83Wg0HSP2Els"
       }
     },
     "testlab": {

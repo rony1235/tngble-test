@@ -82,7 +82,6 @@ describe('Auth0Adapter (integration)', () => {
       client,
       config,
       fetchImpl,
-      redirectUri: 'tngble://registered-callback',
     });
 
     const result = await adapter.signUp({
@@ -138,7 +137,6 @@ describe('Auth0Adapter (integration)', () => {
       client,
       config,
       fetchImpl,
-      redirectUri: 'tngble://registered-callback',
     });
 
     await adapter.signUp({
@@ -160,7 +158,6 @@ describe('Auth0Adapter (integration)', () => {
           otp: '123456',
           realm: 'email',
           scope: AUTH0_SCOPES,
-          redirect_uri: 'tngble://registered-callback',
           audience: config.audience,
         }),
       }),
@@ -427,7 +424,6 @@ describe('Auth0Adapter (integration)', () => {
       client,
       config,
       fetchImpl,
-      redirectUri: 'tngble://registered-callback',
     });
 
     await adapter.requestPasswordReset('dev@tngble.app');
@@ -459,7 +455,6 @@ describe('Auth0Adapter (integration)', () => {
       client,
       config,
       fetchImpl,
-      redirectUri: 'tngble://registered-callback',
     });
 
     await adapter.requestPasswordReset('dev@tngble.app');

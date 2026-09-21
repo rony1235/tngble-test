@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import Auth0, {
   parseIdToken,
   type Credentials,
@@ -21,7 +20,6 @@ import {
   validateVerificationCode,
 } from '@/domain/sanitization';
 import {
-  getAuth0CallbackUrls,
   getAuth0RuntimeConfig,
   type Auth0RuntimeConfig,
 } from '@/infrastructure/auth/Auth0Config';
@@ -140,7 +138,6 @@ export type Auth0AdapterOptions = {
   client?: Auth0ClientLike;
   config?: Auth0RuntimeConfig;
   dbConnection?: string;
-  redirectUri?: string;
   fetchImpl?: typeof fetch;
 
   /**
@@ -202,7 +199,6 @@ export class Auth0Adapter implements AuthService {
   private readonly config: Auth0RuntimeConfig;
   private readonly credentials: CredentialsManager;
   private readonly dbConnection: string;
-  private readonly redirectUri: string;
   private readonly fetchImpl: typeof fetch;
   private readonly emailVerificationApiUrl?: string;
 
@@ -215,10 +211,6 @@ export class Auth0Adapter implements AuthService {
     this.client = options?.client ?? createDefaultClient(this.config);
     this.credentials = new CredentialsManager(this.client.credentialsManager);
     this.dbConnection = options?.dbConnection ?? AUTH0_DB_CONNECTION;
-    const callbacks = getAuth0CallbackUrls(this.config.domain);
-    this.redirectUri =
-      options?.redirectUri ??
-      (Platform.OS === 'ios' ? callbacks.ios : callbacks.android);
     this.fetchImpl = options?.fetchImpl ?? fetch.bind(globalThis);
     this.emailVerificationApiUrl =
       options?.emailVerificationApiUrl ??
@@ -329,7 +321,7 @@ export class Auth0Adapter implements AuthService {
       if (!otpCredentials.idToken) {
         throw createAuthError(
           'generic',
-          'Email verification proof was not returned by Auth0.',
+          'We could not verify that code. Please request a new one and try again.',
         );
       }
 
@@ -343,7 +335,10 @@ export class Auth0Adapter implements AuthService {
           verification.email.trim().toLowerCase() !==
           pending.email.trim().toLowerCase()
         ) {
-          throw createAuthError('generic', 'Verified email does not match signup.');
+          throw createAuthError(
+            'generic',
+            'That code does not match this signup. Start again with your email.',
+          );
         }
       }
 
@@ -538,7 +533,7 @@ export class Auth0Adapter implements AuthService {
       if (!credentials.idToken || !credentials.accessToken) {
         throw createAuthError(
           'generic',
-          'Password reset proof was not returned by Auth0.',
+          'We could not verify that code. Please request a new one and try again.',
         );
       }
       this.pendingPasswordReset = {
@@ -587,10 +582,9 @@ export class Auth0Adapter implements AuthService {
     };
 
     if (!startResponse.ok) {
-      const meAudience = `https://${this.config.domain}/me/`;
       throw createAuthError(
         'generic',
-        `Could not start in-app password change. In Auth0 Dashboard → Applications → APIs → Auth0 My Account API, authorize the Tngble app for user access with scope create:me:authentication_methods (audience ${meAudience}).`,
+        'We could not start password reset right now. Please try again later.',
         startBody.error_description ?? startBody.message ?? startBody.error,
       );
     }
@@ -600,7 +594,7 @@ export class Auth0Adapter implements AuthService {
     if (!methodId || !authSession) {
       throw createAuthError(
         'generic',
-        'Auth0 did not return a password-change session.',
+        'We could not start password reset right now. Please try again later.',
       );
     }
 
@@ -760,6 +754,10 @@ export class Auth0Adapter implements AuthService {
     otp: string,
     options?: { audience?: string; extraScopes?: string },
   ): Promise<Credentials> {
+    // Native passwordless OTP is a direct token grant — do not send a platform
+    // redirect_uri. An iOS-only callback that is missing from Auth0 Allowed
+    // Callback URLs would make registration OTP fail on Appetize/iOS while
+    // Android (different callback string) still worked.
     const requestBody: Record<string, string> = {
       grant_type: PASSWORDLESS_OTP_GRANT,
       client_id: this.config.clientId,
@@ -769,7 +767,6 @@ export class Auth0Adapter implements AuthService {
       scope: withRequiredScopes(
         [this.config.scope, options?.extraScopes].filter(Boolean).join(' '),
       ),
-      ...(this.redirectUri ? { redirect_uri: this.redirectUri } : {}),
     };
 
     const audience = options?.audience ?? this.config.audience;
@@ -806,7 +803,7 @@ export class Auth0Adapter implements AuthService {
     if (!payload.access_token || !payload.id_token) {
       throw createAuthError(
         'generic',
-        'Auth0 did not return the email verification proof.',
+        'We could not verify that code. Please request a new one and try again.',
       );
     }
 
@@ -827,7 +824,10 @@ export class Auth0Adapter implements AuthService {
     proofToken: string,
   ): Promise<NativeVerificationResponse> {
     if (!this.emailVerificationApiUrl) {
-      throw createAuthError('generic', 'Email verification URL is not configured.');
+      throw createAuthError(
+        'generic',
+        'Email verification is temporarily unavailable. Please try again later.',
+      );
     }
 
     let response: Response;
@@ -865,7 +865,7 @@ export class Auth0Adapter implements AuthService {
     if (!verified.email || !verified.userId || verified.emailVerified !== true) {
       throw createAuthError(
         'generic',
-        'Invalid email verification response from server.',
+        'We could not finish email verification. Please try again.',
       );
     }
 

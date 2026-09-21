@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,6 +40,11 @@ import { colors, typography } from '@/theme/tokens';
 import FaceIdIcon from '../../../assets/auth/face.svg';
 
 const LOGO = require('../../../assets/brand/tngble-logo.png');
+
+function isIosSimulator(): boolean {
+  if (Platform.OS !== 'ios') return false;
+  return Constants.platform?.ios?.simulator === true;
+}
 
 /**
  * Sign-in — Figma `#8 Sign-In Screen 1` (node 507:552).
@@ -134,6 +140,11 @@ export function SignInScreen() {
     async (provider: SocialProvider) => {
       if (busy) return;
       clearMessages();
+      // Appetize / iOS Simulator cannot complete ASWebAuthenticationSession callbacks.
+      if (isIosSimulator()) {
+        setLocalError('Apple/Google sign-in needs a real iPhone. Use email and password here.');
+        return;
+      }
       await signInWithSocial(provider);
     },
     [busy, clearMessages, signInWithSocial],

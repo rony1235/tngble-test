@@ -31,6 +31,17 @@ describe('mapProviderError', () => {
     expect(mapped.message).toBe('Check your details and try again.');
   });
 
+  it('scrubs already-mapped AuthError messages that contain eng jargon', () => {
+    const mapped = mapProviderError({
+      code: 'generic' as const,
+      message:
+        'Auth0 rejected signup (invalid_signup). On Username-Password-Authentication → Attributes…',
+    });
+    expect(mapped.code).toBe('generic');
+    expect(mapped.message).toBe(AUTH_ERROR_MESSAGES.generic);
+    expect(isSafeAuthErrorMessage(mapped.message)).toBe(true);
+  });
+
   it('collapses account-existence and password proximity leaks to generic', () => {
     const samples = [
       'Wrong email or password',
@@ -80,34 +91,36 @@ describe('mapProviderError', () => {
     expect(fromJson.message).toMatch(/verify your email/i);
   });
 
-  it('maps unauthorized_client to required grant guidance', () => {
+  it('maps unauthorized_client to a friendly unavailable message', () => {
     const mapped = mapProviderError({
       code: 'unauthorized_client',
       message: "Grant type 'http://auth0.com/oauth/grant-type/password-realm' is not allowed for the client.",
     });
     expect(mapped.code).toBe('generic');
-    expect(mapped.message).toMatch(/enable Password and Passwordless OTP/i);
+    expect(mapped.message).toMatch(/temporarily unavailable/i);
+    expect(isSafeAuthErrorMessage(mapped.message)).toBe(true);
   });
 
-  it('maps invalid_connection to Email OTP connection guidance', () => {
+  it('maps invalid_connection to a friendly code-send message', () => {
     const mapped = mapProviderError({
       code: 'invalid_connection',
       message: 'Connection does not support email_otp or phone_otp authentication',
     });
     expect(mapped.code).toBe('generic');
-    expect(mapped.message).toMatch(/Passwordless Email is not enabled/i);
+    expect(mapped.message).toMatch(/verification code/i);
+    expect(isSafeAuthErrorMessage(mapped.message)).toBe(true);
   });
 
-  it('maps invalid_signup to DB identifier / Attributes guidance', () => {
+  it('maps invalid_signup to a friendly create-account message', () => {
     const mapped = mapProviderError({
       code: 'invalid_signup',
       message: 'Invalid sign up',
       status: 400,
     });
     expect(mapped.code).toBe('generic');
-    expect(mapped.message).toMatch(/Attributes/i);
-    expect(mapped.message).toMatch(/Username/i);
-    expect(mapped.message).toMatch(/Email/i);
+    expect(mapped.message).toMatch(/could not create your account/i);
+    expect(mapped.message).toMatch(/sign in/i);
+    expect(isSafeAuthErrorMessage(mapped.message)).toBe(true);
   });
 
   it('maps account_linking_required to a recoverable verify message', () => {
@@ -116,7 +129,8 @@ describe('mapProviderError', () => {
       message: 'account_linking_required',
     });
     expect(mapped.message).toMatch(/code was accepted/i);
-    expect(mapped.message).toMatch(/Post-Login linking Action/i);
+    expect(mapped.message).toMatch(/new code/i);
+    expect(isSafeAuthErrorMessage(mapped.message)).toBe(true);
   });
 
   it('attaches raw Auth0 detail under the safe customized message', () => {
@@ -124,7 +138,7 @@ describe('mapProviderError', () => {
       code: 'unauthorized_client',
       message: "Grant type 'password' is not allowed for the client.",
     });
-    expect(mapped.message).toMatch(/Grant Types/i);
+    expect(isSafeAuthErrorMessage(mapped.message)).toBe(true);
     expect(mapped.detail).toMatch(/unauthorized_client/i);
     expect(mapped.detail).toMatch(/password/i);
   });
@@ -135,21 +149,23 @@ describe('mapProviderError', () => {
     expect(mapped.detail).toBeUndefined();
   });
 
-  it('maps a disabled database connection to application guidance', () => {
+  it('maps a disabled database connection to a friendly unavailable message', () => {
     const mapped = mapProviderError({
       code: 'bad.connection',
       message: 'The connection is disabled',
     });
     expect(mapped.code).toBe('generic');
-    expect(mapped.message).toMatch(/database connection is disabled/i);
+    expect(mapped.message).toMatch(/temporarily unavailable/i);
+    expect(isSafeAuthErrorMessage(mapped.message)).toBe(true);
   });
 
-  it('maps email_verified signup gate to Verify email on sign up OFF guidance', () => {
+  it('maps email_verified signup gate to a friendly create-account message', () => {
     const mapped = mapProviderError({
       message: '"email_verified" needs to be true for user signups.',
     });
     expect(mapped.code).toBe('generic');
-    expect(mapped.message).toMatch(/Verify email on sign up/i);
+    expect(mapped.message).toMatch(/could not create your account/i);
+    expect(isSafeAuthErrorMessage(mapped.message)).toBe(true);
   });
 
   it('maps user_exists to duplicate-account guidance', () => {
@@ -159,6 +175,7 @@ describe('mapProviderError', () => {
     });
     expect(mapped.code).toBe('generic');
     expect(mapped.message).toMatch(/already exists/i);
+    expect(isSafeAuthErrorMessage(mapped.message)).toBe(true);
   });
 
   it('keeps true account-blocked messaging distinct from access_denied', () => {
