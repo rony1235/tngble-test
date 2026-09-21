@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, screen } from '@testing-library/react-native';
+import { act, cleanup, screen } from '@testing-library/react-native';
 
 import { TermsDocumentScreen } from '@/presentation/screens/TermsDocumentScreen';
 import { renderAuthUi } from './renderAuthUi';

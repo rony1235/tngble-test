@@ -28,16 +28,14 @@ export function TermsAndConditionsScreen() {
   const { isAuthenticated, signOut } = useApplicationAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [agreed, setAgreed] = useState(checked);
+  /** null = follow store `checked`; boolean = user toggled on this screen. */
+  const [localAgreed, setLocalAgreed] = useState<boolean | null>(null);
+  const agreed = localAgreed ?? checked;
   const [consentError, setConsentError] = useState<string | undefined>();
 
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync(colors.splashBackground);
   }, []);
-
-  useEffect(() => {
-    setAgreed(checked);
-  }, [checked]);
 
   const goBack = useCallback(() => {
     if (isAuthenticated) {
@@ -146,7 +144,7 @@ export function TermsAndConditionsScreen() {
             hitSlop={8}
             onPress={() => {
               setConsentError(undefined);
-              setAgreed((value) => !value);
+              setLocalAgreed((value) => !(value ?? checked));
             }}
             style={styles.agreeRow}
             testID="terms-agree"

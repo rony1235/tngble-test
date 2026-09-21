@@ -48,7 +48,7 @@ export function ForgotPasswordCodeScreen() {
   const [resendSent, setResendSent] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [cooldownRemainingMs, setCooldownRemainingMs] = useState(RESEND_COOLDOWN_MS);
-  const cooldownStartedAtRef = useRef(Date.now());
+  const cooldownStartedAtRef = useRef(0);
   const confirmingRef = useRef(false);
 
   useEffect(() => {
@@ -56,6 +56,7 @@ export function ForgotPasswordCodeScreen() {
   }, []);
 
   useEffect(() => {
+    cooldownStartedAtRef.current = Date.now();
     const tick = () => {
       const elapsed = Date.now() - cooldownStartedAtRef.current;
       setCooldownRemainingMs(Math.max(0, RESEND_COOLDOWN_MS - elapsed));
