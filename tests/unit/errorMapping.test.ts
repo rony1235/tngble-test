@@ -98,6 +98,18 @@ describe('mapProviderError', () => {
     expect(mapped.message).toMatch(/Passwordless Email is not enabled/i);
   });
 
+  it('maps invalid_signup to DB identifier / Attributes guidance', () => {
+    const mapped = mapProviderError({
+      code: 'invalid_signup',
+      message: 'Invalid sign up',
+      status: 400,
+    });
+    expect(mapped.code).toBe('generic');
+    expect(mapped.message).toMatch(/Attributes/i);
+    expect(mapped.message).toMatch(/Username/i);
+    expect(mapped.message).toMatch(/Email/i);
+  });
+
   it('maps account_linking_required to a recoverable verify message', () => {
     const mapped = mapProviderError({
       code: 'access_denied',

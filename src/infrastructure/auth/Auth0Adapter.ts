@@ -119,6 +119,8 @@ export type Auth0ClientLike = {
       email: string;
       password: string;
       connection: string;
+      /** Only when the DB connection Requires Username / username signup Required. */
+      username?: string;
       given_name?: string;
       family_name?: string;
       name?: string;
@@ -458,10 +460,7 @@ export class Auth0Adapter implements AuthService {
     this.pendingOtp = null;
     this.pendingPasswordReset = null;
 
-    // Read before clearing — only browser sessions need Auth0 `/v2/logout`.
-    const sessionMode = await this.getSessionMode();
-
-    // Local logout is authoritative and must not wait on a browser operation.
+    // Local logout first so the UI can leave the authenticated shell immediately.
     try {
       await this.credentials.clear();
     } catch (error) {
@@ -472,10 +471,8 @@ export class Auth0Adapter implements AuthService {
     await clearLegacySession();
     await this.clearSessionMode();
 
-    // Google / Universal Login leave an Auth0 cookie in Custom Tabs. Clear it
-    // only for those sessions so email/password logout stays silent.
-    if (sessionMode !== 'browser') return;
-
+    // Always hit Auth0 `/v2/logout` (Custom Tabs) so the hosted session cookie
+    // is cleared — same path for native password and Google / Universal Login.
     try {
       await this.client.webAuth.clearSession(
         {},

@@ -301,17 +301,20 @@ describe('Auth0Adapter (integration)', () => {
     expect(result.user.provider).toBe('apple');
   });
 
-  it('signOut clears local credentials without browser logout when no web session', async () => {
+  it('signOut clears local credentials and always calls Auth0 logout', async () => {
     const client = createMockClient();
     const adapter = new Auth0Adapter({ client, config });
 
     await adapter.signOut();
 
     expect(client.credentialsManager.clearCredentials).toHaveBeenCalled();
-    expect(client.webAuth.clearSession).not.toHaveBeenCalled();
+    expect(client.webAuth.clearSession).toHaveBeenCalledWith(
+      {},
+      { customScheme: AUTH0_CUSTOM_SCHEME },
+    );
   });
 
-  it('signOut calls Auth0 logout after Universal Login / social (browser session)', async () => {
+  it('signOut calls Auth0 logout after Universal Login', async () => {
     const client = createMockClient();
     const adapter = new Auth0Adapter({ client, config });
 
@@ -325,14 +328,17 @@ describe('Auth0Adapter (integration)', () => {
     expect(client.credentialsManager.clearCredentials).toHaveBeenCalled();
   });
 
-  it('signOut skips Auth0 browser logout after native password login', async () => {
+  it('signOut calls Auth0 logout after native password login', async () => {
     const client = createMockClient();
     const adapter = new Auth0Adapter({ client, config });
 
     await adapter.signIn({ email: 'dev@tngble.app', password: 'Secret123!' });
     await adapter.signOut();
 
-    expect(client.webAuth.clearSession).not.toHaveBeenCalled();
+    expect(client.webAuth.clearSession).toHaveBeenCalledWith(
+      {},
+      { customScheme: AUTH0_CUSTOM_SCHEME },
+    );
     expect(client.credentialsManager.clearCredentials).toHaveBeenCalled();
   });
 

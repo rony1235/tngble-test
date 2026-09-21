@@ -22,14 +22,17 @@ pnpm android   # or: pnpm ios
 
 ## Auth0 setup (short)
 
-Operator guide: **[`docs/auth.md`](docs/auth.md)** (env, callbacks, Google/Apple, demo script, carry-over).
+Operator guide: **[`docs/auth.md`](docs/auth.md)** (env, tenant summary, callbacks, Google/Apple, demo).
 
 | What | Value / where |
 | --- | --- |
 | Scheme / app id | `tngble` / `com.tngble.app` |
-| Env | `EXPO_PUBLIC_AUTH0_DOMAIN`, `CLIENT_ID`, `AUDIENCE` |
+| Env | `EXPO_PUBLIC_AUTH0_DOMAIN`, `CLIENT_ID`, optional `AUDIENCE` |
 | Callbacks | `tngble://{DOMAIN}/ios\|android/com.tngble.app/callback` |
-| Mock boot | `EXPO_PUBLIC_USE_MOCK_AUTH=true` uses FakeAuth until tenant is ready; production EAS sets `false` |
+| DB Attributes | Email identifier Required; Username signup **OFF** (avoids `400 Invalid sign up`) |
+| Mock boot | `EXPO_PUBLIC_USE_MOCK_AUTH=true` uses FakeAuth; `standalone` / `production` EAS set `false` |
+| Standalone APK | [`docs/android-standalone-build.md`](docs/android-standalone-build.md) — `eas build --profile standalone` |
+| 200% text scale | Labels done; device audit checklist [`docs/a11y-200-text-scale.md`](docs/a11y-200-text-scale.md) |
 
 More detail: [phase 0](docs/auth0-phase-0-prerequisites.md) · [phase 2 tenant](docs/auth0-phase-2-tenant-setup.md) · [security](docs/auth0-phase-9-security-checklist.md).
 

@@ -24,9 +24,29 @@ Deep checklists: [phase 0](./auth0-phase-0-prerequisites.md) · [phase 2 tenant]
 | `EXPO_PUBLIC_AUTH0_CLIENT_ID` | Native application Client ID |
 | `EXPO_PUBLIC_AUTH0_AUDIENCE` | Optional API identifier — omit when there is no backend |
 | `EXPO_PUBLIC_API_URL` | Backend base URL (optional legacy helpers); signup OTP uses Auth0 Authentication API |
-| `EXPO_PUBLIC_USE_MOCK_AUTH` | `true` → FakeAuthAdapter boot; production EAS forces `false` |
+| `EXPO_PUBLIC_USE_MOCK_AUTH` | `true` → FakeAuthAdapter boot; production / standalone EAS forces `false` |
 
 Copy `.env.example` → `.env`. Never commit secrets. Never ship the Auth0 domain placeholder from `app.config.ts`.
+
+## Auth0 tenant configuration (summary)
+
+Point the Native app at this tenant; full checklist: [phase 2](./auth0-phase-2-tenant-setup.md).
+
+| Area | Required setting |
+| --- | --- |
+| Application | Type **Native**; Client ID → `EXPO_PUBLIC_AUTH0_CLIENT_ID` |
+| Callbacks / Logout | `tngble://{DOMAIN}/android/com.tngble.app/callback` (+ iOS twin) |
+| Grants | **Password**, **Passwordless OTP**, **Refresh Token**, **Authorization Code** |
+| DB connection | **Username-Password-Authentication** enabled for the app |
+| DB Attributes | **Email** identifier + signup **Required**; **Username** identifier/signup **OFF** (email-only Create Account) |
+| DB Verify email on sign up | **OFF** (OTP / linking Action owns verification) |
+| Passwordless Email | Enabled for the Native app (code delivery) |
+| My Account API | Authorize Native app with `create:me:authentication_methods` (forgot-password set password) |
+| Post-Login Action | Deploy [`auth0/actions/post-login-require-email-verified.js`](../auth0/actions/post-login-require-email-verified.js) |
+| Google / Apple | Connections enabled; **own** OAuth keys (not Auth0 Dev Keys) for native |
+| Social | Optional audience omit when no API |
+
+**Live device `400 Invalid sign up`:** almost always Username signup Required / identifier mismatch, or duplicate email under generic signup errors. Fix Attributes first, then retry with a **new** email.
 
 ## Callback / logout URLs
 

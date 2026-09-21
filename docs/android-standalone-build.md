@@ -1,6 +1,6 @@
 # AUTH-01 — Signed Android standalone build
 
-Dev Client (`development` profile) is **not** a release binary.
+Dev Client (`development` profile) is **not** a release binary. Current device work uses Dev Client on `iv8h955t4tbiizee`; generate a signed APK with the `standalone` (or `production`) profile when validating Auth0 without Metro.
 
 ## Profiles (`eas.json`)
 
@@ -13,10 +13,9 @@ Dev Client (`development` profile) is **not** a release binary.
 
 ## Generate (owner account with EAS project access)
 
-Logged-in Expo user must be a member of project `2ff09bdf-727e-4355-b185-4359bb9795c9` (`tngble`).
-
 ```bash
 eas whoami
+# Set EAS env for this profile first (see below)
 eas build --platform android --profile standalone --non-interactive
 ```
 
@@ -26,11 +25,21 @@ Or mock-auth smoke APK:
 eas build --platform android --profile preview --non-interactive
 ```
 
-Set EAS project secrets / env for `EXPO_PUBLIC_AUTH0_DOMAIN` and `EXPO_PUBLIC_AUTH0_CLIENT_ID` on `standalone` / `production`.
+### EAS env (required for Auth0 standalone)
+
+On the Expo project, set for profile `standalone` / `production`:
+
+- `EXPO_PUBLIC_AUTH0_DOMAIN`
+- `EXPO_PUBLIC_AUTH0_CLIENT_ID`
+- `EXPO_PUBLIC_AUTH0_AUDIENCE` (optional)
+- `EXPO_PUBLIC_USE_MOCK_AUTH=false` (already in `eas.json` for these profiles)
+
+Install the resulting APK on device; no Metro required.
 
 ## Status
 
 | Item | Status |
 | --- | --- |
-| Profile `standalone` added | Done |
-| Build submitted from this machine | **Blocked** — Expo user lacks READ on AppEntity (need `eas login` as project member) |
+| Profile `standalone` in `eas.json` | Done |
+| Auth0 env wired in EAS dashboard | Owner action |
+| Signed APK generated / installed | Owner — run `eas build --profile standalone` when logged in as project member |

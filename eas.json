@@ -16,8 +16,20 @@
     },
     "preview": {
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_USE_MOCK_AUTH": "true"
+      }
+    },
+    "standalone": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_USE_MOCK_AUTH": "false"
       }
     },
     "appetize": {

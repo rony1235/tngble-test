@@ -276,6 +276,21 @@ export function mapProviderError(error: unknown): AuthError {
     );
   }
 
+  // Auth0 often returns this for: (1) Requires Username / Flexible Identifier
+  // mismatch, (2) duplicate email when “generic signup API error” is ON, or
+  // (3) password/signup policy. Prefer the identifier checklist — most common
+  // for this app’s email-only Create Account.
+  if (/invalid_signup|invalid.?sign.?up/i.test(text)) {
+    return withProviderDetail(
+      createAuthError(
+        'generic',
+        'Auth0 rejected signup (invalid_signup). On Username-Password-Authentication → Attributes: enable Email as identifier with signup Required; turn Username identifier OFF (or signup Off). Then try a new email, or Sign in if this address already exists.',
+      ),
+      like,
+      text,
+    );
+  }
+
   if (
     /invalid.?otp|wrong.?code|incorrect.?code|otp.?expired|code.?expired|verification.?code/i.test(
       text,

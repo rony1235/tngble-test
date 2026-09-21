@@ -102,11 +102,21 @@ The flow temporarily creates an `email|…` OTP identity and immediately links i
 
 On the **Username-Password-Authentication** connection:
 
-1. **Attributes → Email**  
-   - **Use Email as Identifier** ON  
-   - **Verify email on sign up: OFF**  
+1. **Attributes** (Flexible Identifiers) — this app signs up with **email + password only** (no username field):
+   - **Email**
+     - **Use Email as Identifier** ON  
+     - **Allow Signup with Email** → **Required**  
+     - **Verify email on sign up: OFF**  
+   - **Username**
+     - **Use Username as Identifier** OFF  
+     - or **Allow Signup with Username** → **Off**  
+     - Do **not** leave Username signup **Required** — Auth0 returns `400 invalid_signup` / “Invalid sign up” when the app omits `username`.  
+   - **Phone** — leave off unless product adds a phone identifier later  
 2. **Authentication Methods**  
    - Enable **Password**  
+3. Connection enabled for the Native application; **Disable Sign Ups** must be OFF  
+
+If signup still returns `invalid_signup` for an email that already exists, check **Tenant Settings → Advanced → Use a generic response in public signup API error message** (ON masks `user_exists` as `invalid_signup`).
 
 Under **Authentication → Passwordless → Email**:
 

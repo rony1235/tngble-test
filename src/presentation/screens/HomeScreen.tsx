@@ -22,7 +22,7 @@ export function HomeScreen() {
           disabled={isBusy}
           label="Sign out"
           onPress={() => {
-            void signOut();
+            void signOut({ redirectTo: '/(auth)/login' });
           }}
           testID="sign-out"
           variant="ghost"

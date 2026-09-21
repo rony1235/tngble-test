@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
+import { MAX_FONT_SIZE_MULTIPLIER } from '@/theme/accessibility';
 import { colors, spacing, typography } from '@/theme/tokens';
 
 type ErrorBannerProps = {
@@ -17,7 +18,9 @@ type ErrorBannerProps = {
 export function ErrorBanner({ message, testID, style, messageStyle }: ErrorBannerProps) {
   return (
     <View style={[styles.wrap, style]} testID={testID}>
-      <Text style={[styles.error, messageStyle]}>{message}</Text>
+      <Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[styles.error, messageStyle]}>
+        {message}
+      </Text>
     </View>
   );
 }
