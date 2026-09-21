@@ -23,6 +23,11 @@ export const colors = {
   licensedText: '#B7B6BC',
   inputFill: '#181623',
   inputPlaceholder: '#FFFFFF',
+  /** Figma Create Account password strength / progress */
+  passwordWeak: '#F43F5E',
+  passwordMedium: '#F59E0B',
+  passwordStrong: '#22C55E',
+  progressInactive: '#656565',
   surface: '#121A2B',
   border: '#243047',
   text: '#F4F7FB',

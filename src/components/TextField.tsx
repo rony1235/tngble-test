@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { MAX_FONT_SIZE_MULTIPLIER } from '@/theme/accessibility';
 
 type TextFieldProps = TextInputProps & {
   label?: string;
@@ -40,7 +41,11 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
 
   return (
     <View style={[styles.wrap, containerStyle]}>
-      {label && !isLogin ? <Text style={styles.label}>{label}</Text> : null}
+      {label && !isLogin ? (
+        <Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={styles.label}>
+          {label}
+        </Text>
+      ) : null}
       <View
         style={[
           isLogin ? styles.loginField : styles.defaultField,
@@ -50,10 +55,14 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
       >
         <TextInput
           ref={ref}
+          cursorColor={isLogin ? colors.white : colors.text}
+          selectionColor={colors.brandCTA}
+          underlineColorAndroid="transparent"
           {...props}
           accessibilityLabel={label ?? props.placeholder ?? undefined}
           autoCapitalize="none"
           autoCorrect={false}
+          maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? MAX_FONT_SIZE_MULTIPLIER}
           onBlur={(event) => {
             setFocused(false);
             onBlur?.(event);
@@ -69,7 +78,11 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         />
         {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 });
@@ -95,7 +108,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.inputFill,
     borderRadius: 8,
     minHeight: 48,
-    height: 48,
     paddingHorizontal: 12,
     paddingVertical: 12,
     paddingRight: 14,
@@ -124,6 +136,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 0,
     margin: 0,
+    backgroundColor: 'transparent',
   },
   trailing: {
     justifyContent: 'center',

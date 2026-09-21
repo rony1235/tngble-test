@@ -1,4 +1,4 @@
-import { getAccessToken } from '@/auth/session';
+import { getAccessTokenFromAuthService } from '@/infrastructure/auth/tokenAccessor';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
@@ -14,7 +14,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   };
 
   if (options.auth !== false) {
-    const token = await getAccessToken();
+    const token = await getAccessTokenFromAuthService();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 

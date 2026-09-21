@@ -5,28 +5,43 @@ import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import BootSplash from 'react-native-bootsplash';
 
-import { AuthProvider, useAuth } from '@/auth/AuthProvider';
+import { useApplicationAuth, useConsentGate } from '@/application';
+import { AppProviders } from '@/providers';
 import { BrandBackground } from '@/components/BrandBackground';
+import { injectAutofillStyles } from '@/theme/injectAutofillStyles';
 import { colors } from '@/theme/tokens';
 
 export default function RootLayout() {
   useEffect(() => {
+    injectAutofillStyles();
     void SystemUI.setBackgroundColorAsync(colors.splashBackground);
   }, []);
 
   return (
     <View style={styles.root}>
       <BrandBackground />
-      <AuthProvider>
+      <AppProviders>
         <StatusBar style="light" />
         <RootNavigator />
-      </AuthProvider>
+      </AppProviders>
     </View>
   );
 }
 
 function RootNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const {
+    isAuthenticated,
+    isPendingVerification,
+    isLoading,
+    requiresTermsAcceptance,
+  } = useApplicationAuth();
+  const { canProceed: hasConsent, ready: consentReady } = useConsentGate();
+  const showAuthStack = !isAuthenticated && !isPendingVerification;
+  // Post-OTP signup always shows Terms, even if this device already stored consent.
+  const showConsentGate =
+    isAuthenticated && consentReady && (!hasConsent || requiresTermsAcceptance);
+  const showApp =
+    isAuthenticated && consentReady && hasConsent && !requiresTermsAcceptance;
 
   useEffect(() => {
     if (!isLoading) {
@@ -34,7 +49,7 @@ function RootNavigator() {
     }
   }, [isLoading]);
 
-  if (isLoading) {
+  if (isLoading || (isAuthenticated && !consentReady)) {
     return null;
   }
 
@@ -46,15 +61,21 @@ function RootNavigator() {
         animation: 'fade',
       }}
     >
-      <Stack.Protected guard={isAuthenticated}>
+      <Stack.Protected guard={showApp}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
 
-      <Stack.Protected guard={!isAuthenticated}>
-        <Stack.Screen name="(auth)" />
+      <Stack.Protected guard={showConsentGate}>
+        <Stack.Screen name="(consent)" />
       </Stack.Protected>
 
-      <Stack.Screen name="index" />
+      <Stack.Protected guard={isPendingVerification}>
+        <Stack.Screen name="(verify)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={showAuthStack}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
     </Stack>
   );
 }

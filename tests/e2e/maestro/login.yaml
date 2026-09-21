@@ -1,0 +1,37 @@
+# Maestro E2E — install CLI: https://maestro.mobile.dev
+#   maestro test tests/e2e/maestro/login.yaml
+#
+# Universal Login opens the Auth0 hosted UI (not an in-app password field).
+# This flow fills the optional email hint and taps Login. Completing the hosted
+# sheet requires an E2E Auth0 tenant + automation credentials (manual until then).
+#
+# Never use the production tenant or real investor accounts.
+appId: com.tngble.app
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: onboarding-screen
+    timeout: 10000
+- tapOn:
+    id: onboarding-login
+- extendedWaitUntil:
+    visible:
+      id: login-screen
+    timeout: 5000
+- assertVisible:
+    id: login-screen
+- assertVisible:
+    id: login-email
+- assertVisible:
+    id: login-submit
+- assertVisible:
+    id: login-apple
+- assertVisible:
+    id: login-google
+- tapOn:
+    id: login-email
+- inputText: "e2e+auth@tngble.app"
+- tapOn:
+    id: login-submit
+# Hosted Auth0 UI takes over — continue assertions only with E2E tenant automation.

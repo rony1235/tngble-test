@@ -3,16 +3,37 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import LoginScreen from '../../app/(auth)/login';
 
-const mockSignIn = jest.fn(async (_credentials?: unknown) => {});
+const mockSignIn = jest.fn(async (_input?: unknown) => null);
+const mockSignInWithSocial = jest.fn(async (_provider?: unknown) => null);
+const mockClearError = jest.fn();
 const mockPush = jest.fn();
+const mockSetConsentChecked = jest.fn(async () => undefined);
 
-jest.mock('@/auth/AuthProvider', () => ({
-  useAuth: () => ({
+let mockCanProceed = true;
+let mockConsentChecked = true;
+
+jest.mock('@/application', () => ({
+  useSignIn: () => ({
     signIn: (...args: unknown[]) => mockSignIn(...args),
-    signOut: jest.fn(),
-    user: null,
-    isLoading: false,
-    isAuthenticated: false,
+    isBusy: false,
+    error: null,
+    clearError: mockClearError,
+  }),
+  useSocialSignIn: () => ({
+    signInWithSocial: (...args: unknown[]) => mockSignInWithSocial(...args),
+    isBusy: false,
+    error: null,
+    clearError: mockClearError,
+  }),
+  useConsentGate: () => ({
+    canProceed: mockCanProceed,
+    checked: mockConsentChecked,
+    setConsentChecked: mockSetConsentChecked,
+    ready: true,
+    acceptConsent: jest.fn(),
+    decision: { allowed: mockCanProceed, reason: mockCanProceed ? 'ok' : 'missing' },
+    accepted: null,
+    requiredVersion: 'terms-v1',
   }),
 }));
 
@@ -39,7 +60,7 @@ async function renderLogin() {
   );
 }
 
-describe('LoginScreen', () => {
+describe('LoginScreen (Figma 507:552)', () => {
   afterEach(async () => {
     await act(async () => {
       cleanup();
@@ -48,63 +69,86 @@ describe('LoginScreen', () => {
 
   beforeEach(() => {
     mockSignIn.mockReset();
+    mockSignInWithSocial.mockReset();
+    mockClearError.mockReset();
     mockPush.mockReset();
-    mockSignIn.mockImplementation(async () => {});
+    mockSetConsentChecked.mockReset();
+    mockSignIn.mockResolvedValue(null);
+    mockSignInWithSocial.mockResolvedValue(null);
+    mockCanProceed = true;
+    mockConsentChecked = true;
   });
 
-  it('renders logo, fields, social actions and signup', async () => {
+  it('renders logo, email, password, Face ID, social actions and signup', async () => {
     await renderLogin();
 
     expect(await screen.findByTestId('login-screen')).toBeTruthy();
     expect(screen.getByTestId('login-logo')).toBeTruthy();
     expect(screen.getByTestId('login-email')).toBeTruthy();
     expect(screen.getByTestId('login-password')).toBeTruthy();
+    expect(screen.getByTestId('login-face-id', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByTestId('login-submit')).toBeTruthy();
     expect(screen.getByTestId('login-apple')).toBeTruthy();
     expect(screen.getByTestId('login-google')).toBeTruthy();
-    expect(screen.getByTestId('login-face-id')).toBeTruthy();
     expect(screen.getByText('Welcome')).toBeTruthy();
     expect(screen.getByText('Sign up.')).toBeTruthy();
   });
 
-  it('accepts email and password input', async () => {
+  it('accepts optional email input', async () => {
     await renderLogin();
     const email = await screen.findByTestId('login-email');
-    const password = screen.getByTestId('login-password');
 
     await act(async () => {
       fireEvent.changeText(email, 'dev@tngble.app');
-      fireEvent.changeText(password, 'secret1');
     });
 
     await waitFor(() => {
       expect(screen.getByTestId('login-email').props.value).toBe('dev@tngble.app');
-      expect(screen.getByTestId('login-password').props.value).toBe('secret1');
     });
   });
 
-  it('shows validation errors for empty submit', async () => {
+  it('shows validation error for invalid email', async () => {
     await renderLogin();
 
     await act(async () => {
-      fireEvent.press(await screen.findByTestId('login-submit'));
+      fireEvent.changeText(await screen.findByTestId('login-email'), 'not-an-email');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('login-email').props.value).toBe('not-an-email');
     });
 
-    expect(await screen.findByText('Email is required')).toBeTruthy();
-    expect(screen.getByText('Password is required')).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('login-submit'));
+    });
+
+    expect(await screen.findByText('Enter a valid email address')).toBeTruthy();
     expect(mockSignIn).not.toHaveBeenCalled();
   });
 
-  it('calls existing auth signIn with credentials', async () => {
+  it('requires password when email is filled', async () => {
     await renderLogin();
 
     await act(async () => {
       fireEvent.changeText(await screen.findByTestId('login-email'), 'dev@tngble.app');
-      fireEvent.changeText(screen.getByTestId('login-password'), 'secret1');
     });
-
     await waitFor(() => {
       expect(screen.getByTestId('login-email').props.value).toBe('dev@tngble.app');
+    });
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('login-submit'));
+    });
+
+    expect(await screen.findByText('Enter your password')).toBeTruthy();
+    expect(mockSignIn).not.toHaveBeenCalled();
+  });
+
+  it('calls native signIn with email and password', async () => {
+    await renderLogin();
+
+    await act(async () => {
+      fireEvent.changeText(await screen.findByTestId('login-email'), 'dev@tngble.app');
+      fireEvent.changeText(await screen.findByTestId('login-password'), 'Secret123!');
     });
 
     await act(async () => {
@@ -114,23 +158,47 @@ describe('LoginScreen', () => {
     await waitFor(() => {
       expect(mockSignIn).toHaveBeenCalledWith({
         email: 'dev@tngble.app',
-        password: 'secret1',
+        password: 'Secret123!',
       });
     });
   });
 
-  it('routes forgot password', async () => {
+  it('requires email and password instead of hosted web login', async () => {
+    await renderLogin();
+
+    await act(async () => {
+      fireEvent.press(await screen.findByTestId('login-submit'));
+    });
+
+    expect(await screen.findByText('Email is required')).toBeTruthy();
+    expect(screen.getByText('Enter your password')).toBeTruthy();
+    expect(mockSignIn).not.toHaveBeenCalled();
+  });
+
+  it('places Forgot Password right-aligned under the password field', async () => {
+    await renderLogin();
+
+    const link = await screen.findByTestId('login-forgot-password');
+    expect(link).toBeTruthy();
+    expect(screen.getByText('Forgot Password?')).toBeTruthy();
+    expect(link.props.style).toEqual(
+      expect.objectContaining({
+        width: 323,
+        height: 20,
+        alignSelf: 'flex-start',
+      }),
+    );
+  });
+
+  it('routes forgot password and sign up', async () => {
     await renderLogin();
     await act(async () => {
       fireEvent.press(await screen.findByTestId('login-forgot-password'));
     });
     expect(mockPush).toHaveBeenCalledWith('/(auth)/forgot-password');
-  });
 
-  it('routes sign up', async () => {
-    await renderLogin();
     await act(async () => {
-      fireEvent.press(await screen.findByTestId('login-signup'));
+      fireEvent.press(screen.getByTestId('login-signup'));
     });
     expect(mockPush).toHaveBeenCalledWith('/(auth)/register');
   });
@@ -139,17 +207,17 @@ describe('LoginScreen', () => {
     let resolveSignIn: () => void = () => undefined;
     mockSignIn.mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
-          resolveSignIn = resolve;
+        new Promise((resolve) => {
+          resolveSignIn = () => resolve(null);
         }),
     );
 
+    // isBusy stays false in mock — submittingRef still guards duplicates within same tick
     await renderLogin();
     await act(async () => {
       fireEvent.changeText(await screen.findByTestId('login-email'), 'dev@tngble.app');
-      fireEvent.changeText(screen.getByTestId('login-password'), 'secret1');
+      fireEvent.changeText(screen.getByTestId('login-password'), 'Secret123!');
     });
-
     await waitFor(() => {
       expect(screen.getByTestId('login-email').props.value).toBe('dev@tngble.app');
     });

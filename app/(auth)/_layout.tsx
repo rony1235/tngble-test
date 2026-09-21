@@ -1,10 +1,23 @@
-import { Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 
+import { useApplicationAuth } from '@/application';
 import { BrandBackground } from '@/components/BrandBackground';
 import { colors } from '@/theme/tokens';
 
 export default function AuthLayout() {
+  const router = useRouter();
+  const { redirectAfterSignOut, clearRedirectAfterSignOut } = useApplicationAuth();
+
+  // Terms Accept signs out into this stack; land on login (not onboarding index).
+  useEffect(() => {
+    if (!redirectAfterSignOut) return;
+    const href = redirectAfterSignOut;
+    clearRedirectAfterSignOut();
+    router.replace(href);
+  }, [clearRedirectAfterSignOut, redirectAfterSignOut, router]);
+
   return (
     <View style={styles.root}>
       <BrandBackground />

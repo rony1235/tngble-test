@@ -1,0 +1,26 @@
+# AUTH-01 Maestro flows (bonus / time-boxed).
+#
+# Install: https://maestro.mobile.dev
+# Run against a simulator/emulator with a dev/release build installed:
+#   maestro test tests/e2e/maestro/login.yaml
+#
+# Never point these at the production Auth0 tenant or real investor credentials.
+# Prefer a dedicated -e2e tenant (see docs/auth0-phase-0-prerequisites.md).
+#
+# Social E2E is intentionally omitted here (often flaky); covered by component +
+# integration tests and the Phase 9 manual matrix.
+
+name: Maestro Auth E2E
+
+on:
+  workflow_dispatch:
+
+jobs:
+  note:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Document local run
+        run: |
+          echo "Maestro YAML lives in tests/e2e/maestro/."
+          echo "Run locally: maestro test tests/e2e/maestro/login.yaml"
+          echo "CI device farm wiring is deferred to Phase 11 / infra ownership."

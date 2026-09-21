@@ -3,28 +3,43 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import LoginScreen from '../../app/(auth)/login';
 
-const mockSignIn = jest.fn(async (_credentials?: unknown) => {});
-const mockPush = jest.fn();
+const mockSignIn = jest.fn(async () => null);
+const mockSignInWithSocial = jest.fn(async (_provider?: unknown) => null);
+const mockClearError = jest.fn();
+const mockSetConsentChecked = jest.fn(async () => undefined);
 
-jest.mock('@/auth/AuthProvider', () => ({
-  useAuth: () => ({
-    signIn: (...args: unknown[]) => mockSignIn(...args),
-    signOut: jest.fn(),
-    user: null,
-    isLoading: false,
-    isAuthenticated: false,
+let mockCanProceed = true;
+let mockConsentChecked = true;
+let mockSocialError: { code: string; message: string } | null = null;
+
+jest.mock('@/application', () => ({
+  useSignIn: () => ({
+    signIn: mockSignIn,
+    isBusy: false,
+    error: null,
+    clearError: mockClearError,
+  }),
+  useSocialSignIn: () => ({
+    signInWithSocial: (...args: unknown[]) => mockSignInWithSocial(...args),
+    isBusy: false,
+    error: mockSocialError,
+    clearError: mockClearError,
+  }),
+  useConsentGate: () => ({
+    canProceed: mockCanProceed,
+    checked: mockConsentChecked,
+    setConsentChecked: mockSetConsentChecked,
+    ready: true,
+    acceptConsent: jest.fn(),
+    decision: { allowed: mockCanProceed, reason: mockCanProceed ? 'ok' : 'missing' },
+    accepted: null,
+    requiredVersion: 'terms-v1',
   }),
 }));
 
-jest.mock('expo-router', () => {
-  const React = require('react');
-  const { Text } = require('react-native');
-  return {
-    useRouter: () => ({ push: mockPush, replace: jest.fn() }),
-    Link: ({ children, testID }: { children: React.ReactNode; testID?: string }) =>
-      React.createElement(Text, { accessibilityRole: 'link', testID }, children),
-  };
-});
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+}));
 
 async function renderLogin() {
   return render(
@@ -39,192 +54,61 @@ async function renderLogin() {
   );
 }
 
-describe('LoginScreen auth sheets', () => {
+describe('LoginScreen social sign-in', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
     mockSignIn.mockReset();
-    mockPush.mockReset();
-    mockSignIn.mockImplementation(async () => {});
+    mockSignInWithSocial.mockReset();
+    mockClearError.mockReset();
+    mockSetConsentChecked.mockReset();
+    mockSignInWithSocial.mockResolvedValue(null);
+    mockCanProceed = true;
+    mockConsentChecked = true;
+    mockSocialError = null;
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
       cleanup();
     });
-    jest.useRealTimers();
   });
 
-  it('opens Apple sheet with account card and Connect', async () => {
+  it('calls useSocialSignIn for Apple and Google when consent present', async () => {
     await renderLogin();
+    expect(await screen.findByTestId('login-screen')).toBeTruthy();
 
     await act(async () => {
       fireEvent.press(await screen.findByTestId('login-apple'));
     });
+    await waitFor(() => expect(mockSignInWithSocial).toHaveBeenCalledWith('apple'));
 
-    expect(await screen.findByTestId('auth-sheet-apple')).toBeTruthy();
-    expect(screen.getByText('Sign in with Apple')).toBeTruthy();
-    expect(screen.getByText('Connect with apple id')).toBeTruthy();
-    expect(screen.getByText('Sign in to TNGBLE using your Apple account')).toBeTruthy();
-    expect(screen.getByTestId('auth-sheet-account')).toBeTruthy();
-    expect(screen.getByText('Mr. Zabbar Khan')).toBeTruthy();
-    expect(screen.getByText('name@example.com')).toBeTruthy();
-    expect(screen.getByTestId('auth-sheet-connect')).toBeTruthy();
-    expect(screen.getByTestId('auth-sheet-provider-icon')).toBeTruthy();
-  });
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('login-google'));
+    });
+    await waitFor(() => expect(mockSignInWithSocial).toHaveBeenCalledWith('google'));
+  }, 15_000);
 
-  it('runs Apple mock connect flow through success into AuthProvider', async () => {
+  it('blocks social until consent when none stored locally', async () => {
+    mockCanProceed = false;
+    mockConsentChecked = false;
+
     await renderLogin();
 
-    await act(async () => {
-      fireEvent.press(await screen.findByTestId('login-apple'));
-    });
-
-    await act(async () => {
-      fireEvent.press(await screen.findByTestId('auth-sheet-connect'));
-    });
-
-    expect(screen.getByTestId('auth-sheet-connect')).toBeTruthy();
-
-    await act(async () => {
-      jest.advanceTimersByTime(700);
-    });
-
-    expect(await screen.findByTestId('auth-sheet-signing-in')).toBeTruthy();
-    expect(screen.getByText('Signing in')).toBeTruthy();
-
-    await act(async () => {
-      jest.advanceTimersByTime(800);
-    });
-
-    await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledWith({
-        email: 'name@example.com',
-        password: 'social-mock',
-      });
-    });
-  });
-
-  it('prevents duplicate Connect while Apple sheet is connecting', async () => {
-    await renderLogin();
-
-    await act(async () => {
-      fireEvent.press(await screen.findByTestId('login-apple'));
-    });
-
-    const connect = await screen.findByTestId('auth-sheet-connect');
-    await act(async () => {
-      fireEvent.press(connect);
-      fireEvent.press(connect);
-    });
-
-    await act(async () => {
-      jest.advanceTimersByTime(2000);
-    });
-
-    await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it('opens Google sheet and completes mock signing-in', async () => {
-    await renderLogin();
-
-    await act(async () => {
-      fireEvent.press(await screen.findByTestId('login-google'));
-    });
-
-    expect(await screen.findByTestId('auth-sheet-google')).toBeTruthy();
-    expect(screen.getByText('Sign in with Google')).toBeTruthy();
-    expect(screen.getByText('Connect with google id')).toBeTruthy();
-    expect(screen.getByTestId('auth-sheet-provider-icon')).toBeTruthy();
-
-    await act(async () => {
-      fireEvent.press(screen.getByTestId('auth-sheet-connect'));
-    });
-
-    await act(async () => {
-      jest.advanceTimersByTime(700);
-    });
-
-    expect(await screen.findByTestId('auth-sheet-signing-in')).toBeTruthy();
-
-    await act(async () => {
-      jest.advanceTimersByTime(800);
-    });
-
-    await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledWith({
-        email: 'name@example.com',
-        password: 'social-mock',
-      });
-    });
-  });
-
-  it('opens Face ID sheet and auto-progresses to signing-in', async () => {
-    await renderLogin();
-
-    await act(async () => {
-      fireEvent.press(await screen.findByTestId('login-face-id'));
-    });
-
-    expect(await screen.findByTestId('auth-sheet-faceId')).toBeTruthy();
-    expect(screen.getByText('Sign in with Face ID')).toBeTruthy();
-    expect(screen.getByText('Connecting with your device')).toBeTruthy();
-    expect(screen.getByTestId('auth-sheet-provider-icon')).toBeTruthy();
-    expect(screen.queryByTestId('auth-sheet-connect')).toBeNull();
-
-    await act(async () => {
-      jest.advanceTimersByTime(400);
-    });
-
-    expect(screen.getByTestId('auth-sheet-provider-icon')).toBeTruthy();
-    expect(screen.queryByTestId('auth-sheet-connecting')).toBeNull();
-
-    await act(async () => {
-      jest.advanceTimersByTime(600);
-    });
-
-    expect(await screen.findByTestId('auth-sheet-signing-in')).toBeTruthy();
-    expect(screen.getByTestId('auth-sheet-provider-icon')).toBeTruthy();
-
-    await act(async () => {
-      jest.advanceTimersByTime(800);
-    });
-
-    await waitFor(() => {
-      expect(mockSignIn).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it('dismisses sheet via overlay and preserves login form values', async () => {
-    await renderLogin();
-
-    await act(async () => {
-      fireEvent.changeText(await screen.findByTestId('login-email'), 'keep@tngble.app');
-      fireEvent.changeText(screen.getByTestId('login-password'), 'keeppass');
-    });
+    expect(await screen.findByTestId('login-consent')).toBeTruthy();
 
     await act(async () => {
       fireEvent.press(screen.getByTestId('login-apple'));
     });
 
-    expect(await screen.findByTestId('auth-sheet-apple')).toBeTruthy();
+    expect(await screen.findByText('Accept the terms to continue with social sign-in')).toBeTruthy();
+    expect(mockSignInWithSocial).not.toHaveBeenCalled();
+  }, 15_000);
 
-    await act(async () => {
-      fireEvent.press(screen.getByTestId('auth-sheet-overlay'));
-    });
+  it('shows social error message from AuthService', async () => {
+    mockSocialError = { code: 'cancelled', message: 'Sign-in was cancelled.' };
 
-    await act(async () => {
-      jest.advanceTimersByTime(300);
-    });
+    await renderLogin();
 
-    await waitFor(() => {
-      expect(screen.queryByTestId('auth-sheet-apple')).toBeNull();
-    });
-
-    expect(screen.getByTestId('login-email').props.value).toBe('keep@tngble.app');
-    expect(screen.getByTestId('login-password').props.value).toBe('keeppass');
-    expect(mockSignIn).not.toHaveBeenCalled();
-  });
+    expect(await screen.findByTestId('login-error')).toBeTruthy();
+    expect(screen.getByText('Sign-in was cancelled.')).toBeTruthy();
+  }, 15_000);
 });

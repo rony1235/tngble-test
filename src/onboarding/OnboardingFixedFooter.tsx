@@ -1,11 +1,11 @@
 import { BlurView } from 'expo-blur';
+import type { RefObject } from 'react';
 import {
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
-  type RefObject,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';

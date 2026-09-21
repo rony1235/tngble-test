@@ -2,70 +2,100 @@
 
 Mobile client for TNGBLE (Expo SDK 57 · React Native · TypeScript).
 
-The app talks only to **our** backend. Wallet / Circle integration stays server-side.
+Identity uses **Auth0 Universal Login** (AUTH-01). Wallet / Circle stays server-side.
 
 ## Requirements
 
 - Node.js **22.13+** (see `.nvmrc`)
 - [pnpm](https://pnpm.io) 10+ (`corepack enable`)
 - iOS Simulator and/or Android Emulator
+- **Development build** (`expo-dev-client`) — **Expo Go is not supported** for Auth0
 
 ```bash
 nvm use
 corepack enable
 pnpm install
 cp .env.example .env
-pnpm start
+# Fill EXPO_PUBLIC_AUTH0_* (see below), then:
+pnpm android   # or: pnpm ios
 ```
 
-Mock auth is on by default. Any email with `@` and password length ≥ 6 signs in.
+## Auth0 setup (short)
+
+Operator guide: **[`docs/auth.md`](docs/auth.md)** (env, callbacks, Google/Apple, demo script, carry-over).
+
+| What | Value / where |
+| --- | --- |
+| Scheme / app id | `tngble` / `com.tngble.app` |
+| Env | `EXPO_PUBLIC_AUTH0_DOMAIN`, `CLIENT_ID`, `AUDIENCE` |
+| Callbacks | `tngble://{DOMAIN}/ios\|android/com.tngble.app/callback` |
+| Mock boot | `EXPO_PUBLIC_USE_MOCK_AUTH=true` uses FakeAuth until tenant is ready; production EAS sets `false` |
+
+More detail: [phase 0](docs/auth0-phase-0-prerequisites.md) · [phase 2 tenant](docs/auth0-phase-2-tenant-setup.md) · [security](docs/auth0-phase-9-security-checklist.md).
+
+## Quality
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test                 # unit + component + integration
+pnpm test:coverage        # ≥90% domain auth/sanitization; ≥80% global
+pnpm test:no-only
+pnpm quality              # all of the above
+```
+
+| Layer | Path |
+| --- | --- |
+| Unit | `tests/unit` |
+| Component (FakeAuth) | `tests/component` |
+| Integration | `tests/integration` |
+| Maestro (E2E tenant only) | `tests/e2e/maestro/login.yaml` |
+
+CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs typecheck, lint, no-only, coverage (uploads `coverage` artifact).
 
 ## Structure
 
 ```
-app/                  Expo Router screens
-  (auth)/login.tsx    Sign-in (design work starts here)
-  (app)/index.tsx     Authenticated home
+app/                       Expo Router (thin routes)
 src/
-  auth/               Session + AuthProvider
-  api/                Backend HTTP client
-  components/         Shared UI primitives
-  theme/tokens.ts     Colors, spacing, type
-e2e/                  Maestro flows
+  domain/                  Auth port, sanitization, consent
+  infrastructure/          Auth0Adapter, Fake, storage, logging
+  application/             Hooks + ApplicationAuthProvider
+  presentation/            Auth screens / components
+  app/providers/           AppProviders composition root
+  components/              Shared UI
+  theme/tokens.ts
+tests/                     unit · component · integration · e2e/maestro
 ```
 
-Import with the `@/` alias (`@/components/Button`).
+Import with `@/` (`@/components/Button`). Screens must use `@/application` hooks — never `react-native-auth0`.
 
 ## Scripts
 
 | Command | Purpose |
-|---|---|
-| `pnpm start` | Dev server |
-| `pnpm test` | Unit / component tests |
-| `pnpm typecheck` | TypeScript |
+| --- | --- |
+| `pnpm start` | Metro (after a native Auth0-capable build exists) |
+| `pnpm android` / `pnpm ios` | Dev client |
+| `pnpm quality` | Typecheck + lint + no-only + coverage |
 | `pnpm build:android:testlab` | EAS Android APK for Firebase Test Lab |
-| `pnpm testlab:android:latest` | Robo smoke on Test Lab (needs `FIREBASE_PROJECT_ID` + `gcloud`) |
-| `pnpm build:ios:appetize` | Local EAS iOS Simulator build (Mac + Xcode) |
-| `pnpm appetize:ios:local` | Local EAS build + upload to Appetize |
-| `maestro test e2e/login.yaml` | E2E (needs build + Maestro CLI) |
+| `pnpm testlab:android:latest` | Robo smoke (needs GCP) |
+| `pnpm appetize:ios:local` | iOS Simulator build → Appetize |
+| `maestro test tests/e2e/maestro/login.yaml` | Auth Maestro (E2E tenant) |
 
-Android cloud smoke (Firebase Test Lab): see [`docs/firebase-test-lab.md`](docs/firebase-test-lab.md).
+Android Test Lab: [`docs/firebase-test-lab.md`](docs/firebase-test-lab.md).  
+iOS Appetize: [`docs/appetize-ios.md`](docs/appetize-ios.md).
 
-iOS Appetize (local Mac preferred): see [`docs/appetize-ios.md`](docs/appetize-ios.md).
 ## First contribution
 
-Implement the login screen UI in `app/(auth)/login.tsx` from the design file you were given.
+Auth screens: `src/presentation/screens/`; routes: `app/(auth)/*`.
 
-Constraints:
-
-1. Keep `useAuth().signIn` — do not invent a parallel auth path.
-2. Reuse `Button` and `TextField` from `src/components` (extend them if needed).
-3. Use tokens from `src/theme/tokens.ts` — no one-off hex colors in the screen.
-4. Preserve `testID`s (`login-screen`, `login-email`, `login-password`, `login-submit`) so E2E keeps working.
-5. Respect safe area + keyboard avoidance on small devices.
+1. Auth0 only via `@/application` / `AuthService`.
+2. Reuse `Button`, `TextField`, `SocialAuthButton`.
+3. Tokens from `src/theme/tokens.ts`.
+4. Keep Maestro `testID`s (`login-screen`, `login-email`, `login-submit`, `login-apple`, `login-google`).
+5. Safe area + keyboard avoidance.
 
 ## Architecture notes
 
-- Sessions live in Secure Store (`src/auth/session.ts`).
-- Flip `EXPO_PUBLIC_USE_MOCK_AUTH=false` and point `EXPO_PUBLIC_API_URL` at the API when `/auth/login` is ready.
+- Plan + DoD: [`docs/auth0-implementation-plan.md`](docs/auth0-implementation-plan.md) · [`docs/auth0-definition-of-done.md`](docs/auth0-definition-of-done.md)
 - Do not call Circle (or any custody SDK) from the mobile app.

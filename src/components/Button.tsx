@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { MAX_FONT_SIZE_MULTIPLIER } from '@/theme/accessibility';
 
 type ButtonVariant = 'primary' | 'ghost' | 'brand' | 'social';
 
@@ -68,6 +69,7 @@ export function Button({
           <ActivityIndicator color={indicatorColor} />
         ) : (
           <Text
+            maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
             style={[
               styles.label,
               variant === 'ghost' && styles.ghostLabel,
@@ -108,7 +110,6 @@ const styles = StyleSheet.create({
   brand: {
     backgroundColor: colors.brandCTA,
     minHeight: 48,
-    height: 48,
     borderRadius: radii.pill,
     paddingHorizontal: 32,
     width: '100%',
@@ -116,7 +117,6 @@ const styles = StyleSheet.create({
   social: {
     backgroundColor: 'transparent',
     minHeight: 48,
-    height: 48,
     borderRadius: radii.pill,
     borderWidth: 1.5,
     borderColor: colors.socialBorder,

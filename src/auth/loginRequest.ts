@@ -1,3 +1,8 @@
+/**
+ * @deprecated Pre-AUTH-01 mock login. Do not call from screens or AuthService.
+ * Product auth uses Universal Login via `@/application` hooks.
+ * Kept only so existing unit tests of the legacy helper still compile.
+ */
 import { api } from '@/api/client';
 import type { LoginCredentials, Session } from '@/auth/types';
 
