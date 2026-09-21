@@ -72,7 +72,7 @@ describe('LoginScreen social sign-in', () => {
     });
   });
 
-  it('calls useSocialSignIn for Apple and Google when consent present', async () => {
+  it('calls useSocialSignIn for Apple and Google', async () => {
     await renderLogin();
     expect(await screen.findByTestId('login-screen')).toBeTruthy();
 
@@ -87,20 +87,15 @@ describe('LoginScreen social sign-in', () => {
     await waitFor(() => expect(mockSignInWithSocial).toHaveBeenCalledWith('google'));
   }, 15_000);
 
-  it('blocks social until consent when none stored locally', async () => {
+  it('does not show terms consent on login', async () => {
     mockCanProceed = false;
     mockConsentChecked = false;
 
     await renderLogin();
 
-    expect(await screen.findByTestId('login-consent')).toBeTruthy();
-
-    await act(async () => {
-      fireEvent.press(screen.getByTestId('login-apple'));
-    });
-
-    expect(await screen.findByText('Accept the terms to continue with social sign-in')).toBeTruthy();
-    expect(mockSignInWithSocial).not.toHaveBeenCalled();
+    expect(await screen.findByTestId('login-screen')).toBeTruthy();
+    expect(screen.queryByTestId('login-consent')).toBeNull();
+    expect(screen.queryByText('I agree to TNGBLE Terms and Conditions')).toBeNull();
   }, 15_000);
 
   it('shows social error message from AuthService', async () => {

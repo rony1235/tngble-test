@@ -16,12 +16,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SystemUI from 'expo-system-ui';
 
-import { useConsentGate, useSignIn, useSocialSignIn } from '@/application';
+import { useSignIn, useSocialSignIn } from '@/application';
 import { BrandBackground } from '@/components/BrandBackground';
 import { Button } from '@/components/Button';
 import { TextField } from '@/components/TextField';
 import type { SocialProvider } from '@/domain/auth';
-import { ConsentCheckbox } from '@/presentation/components/ConsentCheckbox';
 import { ErrorBanner } from '@/presentation/components/ErrorBanner';
 import { SocialAuthButtons } from '@/presentation/components/SocialAuthButtons';
 import {
@@ -54,7 +53,6 @@ export function SignInScreen() {
     error: socialError,
     clearError: clearSocialError,
   } = useSocialSignIn();
-  const { canProceed, checked, setConsentChecked, ready: consentReady } = useConsentGate();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -68,13 +66,11 @@ export function SignInScreen() {
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState<string | undefined>();
   const [passwordError, setPasswordError] = useState<string | undefined>();
-  const [consentError, setConsentError] = useState<string | undefined>();
   const [localError, setLocalError] = useState<string | null>(null);
 
   const busy = signInBusy || socialBusy;
   const formError = localError ?? signInError?.message ?? socialError?.message ?? null;
   const formErrorDetail = localError ? undefined : signInError?.detail ?? socialError?.detail;
-  const needsConsentForSocial = consentReady && !canProceed;
 
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync(colors.splashBackground);
@@ -99,7 +95,6 @@ export function SignInScreen() {
 
   const clearMessages = useCallback(() => {
     setLocalError(null);
-    setConsentError(undefined);
     clearError();
     clearSocialError();
   }, [clearError, clearSocialError]);
@@ -139,15 +134,9 @@ export function SignInScreen() {
     async (provider: SocialProvider) => {
       if (busy) return;
       clearMessages();
-
-      if (!canProceed) {
-        setConsentError('Accept the terms to continue with social sign-in');
-        return;
-      }
-
       await signInWithSocial(provider);
     },
-    [busy, canProceed, clearMessages, signInWithSocial],
+    [busy, clearMessages, signInWithSocial],
   );
 
   return (
@@ -252,21 +241,6 @@ export function SignInScreen() {
             >
               <Text style={styles.forgot}>Forgot Password?</Text>
             </Pressable>
-
-            {needsConsentForSocial ? (
-              <ConsentCheckbox
-                checked={checked}
-                disabled={busy}
-                error={consentError}
-                label="I agree to TNGBLE Terms and Conditions"
-                onCheckedChange={(value) => {
-                  setConsentError(undefined);
-                  void setConsentChecked(value);
-                }}
-                onOpenTerms={() => router.push('/(auth)/terms')}
-                testID="login-consent"
-              />
-            ) : null}
 
             {formError ? (
               <ErrorBanner
