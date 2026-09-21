@@ -7,6 +7,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "22.13.0",
       "ios": {
         "simulator": true
       },
@@ -16,6 +17,7 @@
     },
     "preview": {
       "distribution": "internal",
+      "node": "22.13.0",
       "android": {
         "buildType": "apk"
       },
@@ -25,6 +27,7 @@
     },
     "standalone": {
       "distribution": "internal",
+      "node": "22.13.0",
       "android": {
         "buildType": "apk"
       },
@@ -35,6 +38,7 @@
     "appetize": {
       "distribution": "internal",
       "withoutCredentials": true,
+      "node": "22.13.0",
       "ios": {
         "simulator": true
       },
@@ -55,6 +59,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "node": "22.13.0",
       "env": {
         "EXPO_PUBLIC_USE_MOCK_AUTH": "false"
       }
